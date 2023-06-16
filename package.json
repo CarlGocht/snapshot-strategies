@@ -12,7 +12,7 @@
   "repository": "snapshot-labs/snapshot-strategies",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p ./tsconfig.json",
     "test": "jest -i strategy.test.ts",
     "test:vp": "jest -i vp.test.ts",
     "test:delegation": "jest -i delegation.test.ts",
