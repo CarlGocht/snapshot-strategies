@@ -13,7 +13,7 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
     if (options.strategies.some((s) => invalidStrategies.includes(JSON.stringify(s))))
         return {};
     const delegationSpace = options.delegationSpace || space;
-    const delegations = await (0, delegation_1.getDelegations)(delegationSpace, network, addresses, snapshot);
+    const delegations = await (0, delegation_1.getDelegationsBySpaceAndAddresses)(delegationSpace, network, addresses, snapshot);
     if (Object.keys(delegations).length === 0)
         return {};
     const scores = (await (0, utils_1.getScoresDirect)(space, options.strategies, network, provider, Object.values(delegations).reduce((a, b) => a.concat(b)), snapshot)).filter((score) => Object.keys(score).length !== 0);

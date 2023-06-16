@@ -1,4 +1,4 @@
-import { getDelegations } from '../../utils/delegation';
+import { getDelegationsBySpaceAndAddresses } from '../../utils/delegation';
 import { getScoresDirect } from '../../utils';
 
 export const author = 'bonustrack';
@@ -24,7 +24,7 @@ export async function strategy(
   )
     return {};
   const delegationSpace = options.delegationSpace || space;
-  const delegations = await getDelegations(
+  const delegations = await getDelegationsBySpaceAndAddresses(
     delegationSpace,
     network,
     addresses,

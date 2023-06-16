@@ -1,12 +1,14 @@
 import { getAddress } from '@ethersproject/address';
-import { getDelegatesBySpace } from '../utils';
+import {
+  SNAPSHOT_SUBGRAPH_URL,
+  getDelegatesBySpace,
+  subgraphRequest
+} from '../utils';
 
 const DELEGATION_DATA_CACHE = {};
 
-// delegations with overrides
-export async function getDelegations(space, network, addresses, snapshot) {
+function filterDelegationDataByAddresses(delegatesBySpace, addresses) {
   const addressesLc = addresses.map((addresses) => addresses.toLowerCase());
-  const delegatesBySpace = await getDelegatesBySpace(network, space, snapshot);
 
   const delegations = delegatesBySpace.filter(
     (delegation: any) =>
@@ -27,14 +29,95 @@ export async function getDelegations(space, network, addresses, snapshot) {
         (delegationsReverse[delegation.delegator] = delegation.delegate)
     );
 
-  return Object.fromEntries(
-    addresses.map((address) => [
+  const data = Object.fromEntries(
+    addresses.map((address: string) => [
       address,
       Object.entries(delegationsReverse)
         .filter(([, delegate]) => address.toLowerCase() === delegate)
         .map(([delegator]) => getAddress(delegator))
     ])
   );
+
+  return data;
+}
+
+export async function getDelegationsBySpaceAndAddressesFromGraphAPI(
+  space: string,
+  network: string,
+  addresses: string[],
+  snapshot = 'latest'
+) {
+  const url = SNAPSHOT_SUBGRAPH_URL[network];
+
+  if (!url) {
+    return Promise.reject(
+      `Delegation subgraph not available for network ${network}`
+    );
+  }
+  const PAGE_SIZE = 1000;
+  let result = [];
+  let page = 0;
+
+  const spaceIn = ['', space];
+  if (space.includes('.eth')) spaceIn.push(space.replace('.eth', ''));
+  const orCondition = addresses.map((address) => ({
+    delegate: address,
+    space_in: spaceIn
+  }));
+
+  const params: any = {
+    delegations: {
+      __args: {
+        where: {
+          or: orCondition
+        },
+        first: 1000,
+        skip: 0
+      },
+      delegator: true,
+      space: true,
+      delegate: true
+    }
+  };
+
+  if (snapshot !== 'latest') {
+    params.delegations.__args.block = { number: snapshot };
+  }
+
+  while (true) {
+    params.delegations.__args.skip = page * PAGE_SIZE;
+
+    const pageResult = await subgraphRequest(url, params);
+    const pageDelegations = pageResult.delegations || [];
+    result = result.concat(pageDelegations);
+    page++;
+    if (pageDelegations.length < PAGE_SIZE) break;
+  }
+
+  return result;
+}
+
+export async function getDelegationsBySpaceAndAddresses(
+  space: string,
+  network: string,
+  addresses: string[],
+  snapshot?: string
+) {
+  const delegatesBySpace = await getDelegationsBySpaceAndAddressesFromGraphAPI(
+    space,
+    network,
+    addresses,
+    snapshot
+  );
+  const data = filterDelegationDataByAddresses(delegatesBySpace, addresses);
+  return data;
+}
+
+// delegations with overrides
+export async function getDelegations(space, network, addresses, snapshot) {
+  const delegatesBySpace = await getDelegatesBySpace(network, space, snapshot);
+  const data = filterDelegationDataByAddresses(delegatesBySpace, addresses);
+  return data;
 }
 
 function getDelegationReverseData(delegation) {
@@ -53,9 +136,10 @@ export async function getDelegationsData(space, network, addresses, snapshot) {
   if (!delegationsReverse) {
     delegationsReverse = {};
 
-    const delegatesBySpace = await getDelegatesBySpace(
-      network,
+    const delegatesBySpace = await getDelegationsBySpaceAndAddresses(
       space,
+      network,
+      addresses,
       snapshot
     );
 

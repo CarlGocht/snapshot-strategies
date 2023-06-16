@@ -1,13 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDelegationsData = exports.getDelegations = void 0;
+exports.getDelegationsData = exports.getDelegations = exports.getDelegationsBySpaceAndAddresses = exports.getDelegationsBySpaceAndAddressesFromGraphAPI = void 0;
 const address_1 = require("@ethersproject/address");
 const utils_1 = require("../utils");
 const DELEGATION_DATA_CACHE = {};
-// delegations with overrides
-async function getDelegations(space, network, addresses, snapshot) {
+function filterDelegationDataByAddresses(delegatesBySpace, addresses) {
     const addressesLc = addresses.map((addresses) => addresses.toLowerCase());
-    const delegatesBySpace = await (0, utils_1.getDelegatesBySpace)(network, space, snapshot);
     const delegations = delegatesBySpace.filter((delegation) => addressesLc.includes(delegation.delegate) &&
         !addressesLc.includes(delegation.delegator));
     if (!delegations)
@@ -17,12 +15,69 @@ async function getDelegations(space, network, addresses, snapshot) {
     delegations
         .filter((delegation) => delegation.space !== '')
         .forEach((delegation) => (delegationsReverse[delegation.delegator] = delegation.delegate));
-    return Object.fromEntries(addresses.map((address) => [
+    const data = Object.fromEntries(addresses.map((address) => [
         address,
         Object.entries(delegationsReverse)
             .filter(([, delegate]) => address.toLowerCase() === delegate)
             .map(([delegator]) => (0, address_1.getAddress)(delegator))
     ]));
+    return data;
+}
+async function getDelegationsBySpaceAndAddressesFromGraphAPI(space, network, addresses, snapshot = 'latest') {
+    const url = utils_1.SNAPSHOT_SUBGRAPH_URL[network];
+    if (!url) {
+        return Promise.reject(`Delegation subgraph not available for network ${network}`);
+    }
+    const PAGE_SIZE = 1000;
+    let result = [];
+    let page = 0;
+    const spaceIn = ['', space];
+    if (space.includes('.eth'))
+        spaceIn.push(space.replace('.eth', ''));
+    const orCondition = addresses.map((address) => ({
+        delegate: address,
+        space_in: spaceIn
+    }));
+    const params = {
+        delegations: {
+            __args: {
+                where: {
+                    or: orCondition
+                },
+                first: 1000,
+                skip: 0
+            },
+            delegator: true,
+            space: true,
+            delegate: true
+        }
+    };
+    if (snapshot !== 'latest') {
+        params.delegations.__args.block = { number: snapshot };
+    }
+    while (true) {
+        params.delegations.__args.skip = page * PAGE_SIZE;
+        const pageResult = await (0, utils_1.subgraphRequest)(url, params);
+        const pageDelegations = pageResult.delegations || [];
+        result = result.concat(pageDelegations);
+        page++;
+        if (pageDelegations.length < PAGE_SIZE)
+            break;
+    }
+    return result;
+}
+exports.getDelegationsBySpaceAndAddressesFromGraphAPI = getDelegationsBySpaceAndAddressesFromGraphAPI;
+async function getDelegationsBySpaceAndAddresses(space, network, addresses, snapshot) {
+    const delegatesBySpace = await getDelegationsBySpaceAndAddressesFromGraphAPI(space, network, addresses, snapshot);
+    const data = filterDelegationDataByAddresses(delegatesBySpace, addresses);
+    return data;
+}
+exports.getDelegationsBySpaceAndAddresses = getDelegationsBySpaceAndAddresses;
+// delegations with overrides
+async function getDelegations(space, network, addresses, snapshot) {
+    const delegatesBySpace = await (0, utils_1.getDelegatesBySpace)(network, space, snapshot);
+    const data = filterDelegationDataByAddresses(delegatesBySpace, addresses);
+    return data;
 }
 exports.getDelegations = getDelegations;
 function getDelegationReverseData(delegation) {
@@ -38,7 +93,7 @@ async function getDelegationsData(space, network, addresses, snapshot) {
     let delegationsReverse = DELEGATION_DATA_CACHE[cacheKey];
     if (!delegationsReverse) {
         delegationsReverse = {};
-        const delegatesBySpace = await (0, utils_1.getDelegatesBySpace)(network, space, snapshot);
+        const delegatesBySpace = await getDelegationsBySpaceAndAddresses(space, network, addresses, snapshot);
         delegatesBySpace.forEach((delegation) => (delegationsReverse[delegation.delegator] =
             getDelegationReverseData(delegation)));
         delegatesBySpace
