@@ -1,0 +1,4 @@
+export declare const author = "michaelotis";
+export declare const version = "0.1.0";
+export declare const dependOnOtherAddress = false;
+export declare function strategy(space: any, network: any, provider: any, addresses: any, options: any, snapshot: any): Promise<Record<string, number>>;
