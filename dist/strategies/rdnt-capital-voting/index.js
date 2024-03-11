@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.strategy = exports.version = exports.author = void 0;
 const units_1 = require("@ethersproject/units");
 const utils_1 = require("../../utils");
-exports.author = 'JDoy99';
+exports.author = 'JD0x2e';
 exports.version = '0.1.0';
 const erc20Abi = [
     'function balanceOf(address owner) external returns (uint256)'
@@ -56,7 +56,7 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
     const blockTag = typeof snapshot === 'number' ? snapshot : 'latest';
     // Get RDNT per LP token (LP provider dependent)
     let rdntPerLp;
-    if (network === '42161') {
+    if (network === '42161' || network === '1') {
         rdntPerLp = await rdntPerBalancerLpToken(network, provider, options, blockTag);
     }
     else if (network === '56') {

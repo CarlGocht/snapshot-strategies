@@ -51,7 +51,6 @@ async function strategy(_space, network, _provider, addresses, options, snapshot
         const result = await (0, utils_1.subgraphRequest)(SUBGRAPH_URL[network], params);
         const characters = result && result.characters ? result.characters : [];
         const latest = characters[characters.length - 1];
-        console.log(options.location);
         for (const character of characters) {
             const userAddress = (0, address_1.getAddress)(character.owner.id);
             const charId = character?.location?.id;

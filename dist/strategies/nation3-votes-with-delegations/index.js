@@ -32,7 +32,7 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
     erc721LastTokenIdCaller.call('lastTokenId', options.erc721, 'getNextId');
     const lastIndex = await erc721LastTokenIdCaller.execute();
     const lastTokenId = bignumber_1.BigNumber.from(lastIndex.lastTokenId).toNumber();
-    for (let i = 0; i < lastTokenId; i++) {
+    for (let i = 1; i < lastTokenId; i++) {
         erc721SignerCaller.call(i, options.erc721, 'signerOf', [i]);
         erc721OwnerCaller.call(i, options.erc721, 'ownerOf', [i]);
     }

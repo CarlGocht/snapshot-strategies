@@ -25,7 +25,8 @@ export declare enum Operation {
     AIfGtB = "a-if-gt-b",
     AIfGteB = "a-if-gte-b",
     Multiply = "multiply",
-    MINUS = "minus"
+    MINUS = "minus",
+    Divide = "divide"
 }
 interface LegacyFields {
     strategy: any;

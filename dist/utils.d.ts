@@ -1,5 +1,6 @@
 import { getDelegations } from './utils/delegation';
 import { getVp, getDelegations as getCoreDelegations } from './utils/vp';
+export declare function sha256(str: any): string;
 export declare function getScoresDirect(space: string, strategies: any[], network: string, provider: any, addresses: string[], snapshot?: number | string): Promise<{}[]>;
 export declare function customFetch(url: any, options: any, timeout?: number): Promise<any>;
 export declare const multicall: typeof import("@snapshot-labs/snapshot.js/dist/utils").multicall, Multicaller: typeof import("@snapshot-labs/snapshot.js/dist/utils/multicaller").default, subgraphRequest: typeof import("@snapshot-labs/snapshot.js/dist/utils").subgraphRequest, ipfsGet: typeof import("@snapshot-labs/snapshot.js/dist/utils").ipfsGet, call: typeof import("@snapshot-labs/snapshot.js/dist/utils").call, getDelegatesBySpace: typeof import("@snapshot-labs/snapshot.js/dist/utils").getDelegatesBySpace, getBlockNumber: typeof import("@snapshot-labs/snapshot.js/dist/utils/web3").getBlockNumber, getProvider: typeof import("@snapshot-labs/snapshot.js/dist/utils/provider").default, getSnapshots: typeof import("@snapshot-labs/snapshot.js/dist/utils/blockfinder").getSnapshots, SNAPSHOT_SUBGRAPH_URL: {

@@ -7,13 +7,13 @@ const fs_1 = require("fs");
 const path_1 = __importDefault(require("path"));
 const basic_1 = __importDefault(require("./basic"));
 const passport_gated_1 = __importDefault(require("./passport-gated"));
-const passport_weighted_1 = __importDefault(require("./passport-weighted"));
 const arbitrum_1 = __importDefault(require("./arbitrum"));
+const karma_eas_attestation_1 = __importDefault(require("./karma-eas-attestation"));
 const validationClasses = {
     basic: basic_1.default,
     'passport-gated': passport_gated_1.default,
-    'passport-weighted': passport_weighted_1.default,
-    arbitrum: arbitrum_1.default
+    arbitrum: arbitrum_1.default,
+    'karma-eas-attestation': karma_eas_attestation_1.default
 };
 const validations = {};
 Object.keys(validationClasses).forEach(function (validationName) {

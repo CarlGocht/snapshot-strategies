@@ -123,10 +123,12 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
         const cardBalancesWeighted = [];
         cardBalances.forEach((cb) => {
             const cbWeighted = applyWeightForCard(cb.context, cb.rv);
-            console.debug('Weighting for card ' +
-                cb.context +
-                ':\n' +
-                JSON.stringify(cbWeighted, null, 2));
+            // console.debug(
+            //   'Weighting for card ' +
+            //     cb.context +
+            //     ':\n' +
+            //     JSON.stringify(cbWeighted, null, 2)
+            // );
             cardBalancesWeighted.push(cbWeighted);
         });
         return cardBalancesWeighted;

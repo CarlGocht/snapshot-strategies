@@ -12,7 +12,10 @@ const abi = [
 ];
 async function strategy(space, network, provider, addresses, options, snapshot) {
     const blockTag = typeof snapshot === 'number' ? snapshot : 'latest';
-    const multi = new utils_1.Multicaller(network, provider, abi, { blockTag });
+    const multi = new utils_1.Multicaller(network, provider, abi, {
+        blockTag,
+        limit: 475
+    });
     for (const address of addresses) {
         multi.call(address, options.reliquaryAddress, 'relicPositionsOfOwner', [
             address

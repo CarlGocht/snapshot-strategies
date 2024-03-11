@@ -19,22 +19,25 @@ const HIGH_PRECISE_UNIT = 1e27;
 const MED_PRECISE_UNIT = 1e18;
 const SCALING_FACTOR = 1e5;
 function returnGraphParams(snapshot, addresses) {
-    return {
+    const params = {
         snxholders: {
             __args: {
                 where: {
                     id_in: addresses.map((address) => address.toLowerCase())
                 },
-                first: 1000,
-                block: {
-                    number: snapshot
-                }
+                first: 1000
             },
             id: true,
             initialDebtOwnership: true,
             debtEntryAtIndex: true
         }
     };
+    if (snapshot !== 'latest') {
+        params.snxholders.__args.block = {
+            number: snapshot
+        };
+    }
+    return params;
 }
 const loadLastDebtLedgerEntry = async (provider, snapshot) => {
     const contract = new contracts_1.Contract(SynthetixStateContractAddress, helper_1.SynthetixStateABI, provider);

@@ -4,17 +4,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SNAPSHOT_SUBGRAPH_URL = exports.getSnapshots = exports.getProvider = exports.getBlockNumber = exports.getDelegatesBySpace = exports.call = exports.ipfsGet = exports.subgraphRequest = exports.Multicaller = exports.multicall = exports.customFetch = exports.getScoresDirect = void 0;
+exports.SNAPSHOT_SUBGRAPH_URL = exports.getSnapshots = exports.getProvider = exports.getBlockNumber = exports.getDelegatesBySpace = exports.call = exports.ipfsGet = exports.subgraphRequest = exports.Multicaller = exports.multicall = exports.customFetch = exports.getScoresDirect = exports.sha256 = void 0;
 const cross_fetch_1 = __importDefault(require("cross-fetch"));
 const strategies_1 = __importDefault(require("./strategies"));
 const snapshot_js_1 = __importDefault(require("@snapshot-labs/snapshot.js"));
 const delegation_1 = require("./utils/delegation");
 const vp_1 = require("./utils/vp");
+const crypto_1 = require("crypto");
+function sha256(str) {
+    return (0, crypto_1.createHash)('sha256').update(str).digest('hex');
+}
+exports.sha256 = sha256;
 async function callStrategy(space, network, addresses, strategy, snapshot) {
     if ((snapshot !== 'latest' && strategy.params?.start > snapshot) ||
         (strategy.params?.end &&
             (snapshot === 'latest' || snapshot > strategy.params?.end)))
         return {};
+    if (!strategies_1.default.hasOwnProperty(strategy.name)) {
+        throw new Error(`Invalid strategy: ${strategy.name}`);
+    }
     const score = await strategies_1.default[strategy.name].strategy(space, network, (0, exports.getProvider)(network), addresses, strategy.params, snapshot);
     const addressesLc = addresses.map((address) => address.toLowerCase());
     return Object.fromEntries(Object.entries(score).filter(([address, vp]) => vp > 0 && addressesLc.includes(address.toLowerCase())));

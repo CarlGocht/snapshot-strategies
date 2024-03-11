@@ -14,7 +14,10 @@ const vestingContractAbi = [
     'function recipient() public view returns (address)',
     'function total_locked() public view returns (uint256)',
     'function start_time() public view returns (uint256)',
-    'function end_time() public view returns (uint256)'
+    'function unclaimed() public view returns (uint256)'
+    // don't need to check initialized?
+    // don't need to check admin?
+    // don't need to check future_admin?
 ];
 async function strategy(space, network, provider, addresses, options, snapshot) {
     const blockTag = typeof snapshot === 'number' ? snapshot : 'latest';
@@ -36,7 +39,7 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
         vestingContractMulti.call(`${vestingContractAddress}.recipient`, vestingContractAddress, 'recipient', []);
         vestingContractMulti.call(`${vestingContractAddress}.total_locked`, vestingContractAddress, 'total_locked', []);
         vestingContractMulti.call(`${vestingContractAddress}.start_time`, vestingContractAddress, 'start_time', []);
-        vestingContractMulti.call(`${vestingContractAddress}.end_time`, vestingContractAddress, 'end_time', []);
+        vestingContractMulti.call(`${vestingContractAddress}.unclaimed`, vestingContractAddress, 'unclaimed', []);
     });
     const vestingContractParameters = await vestingContractMulti.execute();
     // Sum all vesting contract balances by recipient over requested addresses.
@@ -50,9 +53,9 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
         const recipient = params['recipient'];
         const start = params['start_time'];
         if (recipient in addressBalances && time > start) {
-            const locked = parseFloat((0, units_1.formatUnits)(params['total_locked'], options.decimals));
-            const end = params['end_time'];
-            addressBalances[recipient] += Math.min((locked * (time - start)) / (end - start), locked);
+            const unclaimedTokens = parseFloat((0, units_1.formatUnits)(params['unclaimed'], options.decimals));
+            // Vested arrow that can be claimed is all that is counted in this strategy
+            addressBalances[recipient] += unclaimedTokens;
         }
     });
     return addressBalances;

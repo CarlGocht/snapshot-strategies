@@ -7,6 +7,7 @@ exports.strategy = exports.version = exports.author = void 0;
 const address_1 = require("@ethersproject/address");
 const cross_fetch_1 = __importDefault(require("cross-fetch"));
 const units_1 = require("@ethersproject/units");
+const utils_1 = require("../../utils");
 exports.author = 'snapshot-labs';
 exports.version = '0.1.0';
 async function strategy(space, network, provider, addresses, options, snapshot) {
@@ -36,11 +37,13 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
         };
         body = JSON.stringify(requestBody);
     }
+    const snapshotSecretHeader = (0, utils_1.sha256)(`${url}${process.env.SNAPSHOT_API_STRATEGY_SALT}`);
     const response = await (0, cross_fetch_1.default)(url, {
         method,
         headers: {
             Accept: 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Snapshot-API-Strategy-Secret': snapshotSecretHeader
         },
         body
     });
@@ -49,7 +52,10 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
         responseData = JSON.parse(responseData);
     }
     catch (e) {
-        throw new Error(`[api-v2] Errors found in API: URL: ${url}, Status: ${response.status}, Response: ${responseData.substring(0, 512)}`);
+        throw new Error(`[api-v2] Errors found in API: URL: ${url}, Status: ${response.status}` +
+            response.ok
+            ? `, Response: ${responseData.substring(0, 512)}`
+            : '');
     }
     if (!responseData?.score)
         throw new Error('Invalid response from API');

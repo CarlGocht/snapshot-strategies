@@ -18,6 +18,7 @@ var Operation;
     Operation["AIfGteB"] = "a-if-gte-b";
     Operation["Multiply"] = "multiply";
     Operation["MINUS"] = "minus";
+    Operation["Divide"] = "divide";
 })(Operation = exports.Operation || (exports.Operation = {}));
 const operandCountByOperation = {
     [Operation.SquareRoot]: 1,
@@ -29,7 +30,8 @@ const operandCountByOperation = {
     [Operation.AIfLteB]: 3,
     [Operation.AIfGtB]: 3,
     [Operation.AIfGteB]: 3,
-    [Operation.MINUS]: 2
+    [Operation.MINUS]: 2,
+    [Operation.Divide]: 2
 };
 function validateOptions(rawOptions) {
     if (!rawOptions.operands) {
@@ -47,7 +49,8 @@ function validateOptions(rawOptions) {
         rawOptions.operation !== Operation.AIfGtB &&
         rawOptions.operation !== Operation.AIfGteB &&
         rawOptions.operation !== Operation.Multiply &&
-        rawOptions.operation !== Operation.MINUS) {
+        rawOptions.operation !== Operation.MINUS &&
+        rawOptions.operation !== Operation.Divide) {
         throw new Error('Invalid `operation`');
     }
     if (rawOptions.operands.length !== operandCountByOperation[rawOptions.operation]) {

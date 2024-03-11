@@ -56,12 +56,9 @@ async function baseStrategy(_space, network, _provider, _addresses, options, sna
         // Paginate and get combined scores
         const pageSize = options.pageSize || DEFAULT_PAGE_SIZE;
         const pages = (0, graphUtils_1.splitArray)(addresses, pageSize);
-        let pageNum = 1;
         for (const addressesPage of pages) {
-            console.info(`Processing page ${pageNum} of ${pages.length}`);
             const pageScores = await getScoresPage(_space, network, _provider, addressesPage, { ...options, pageSize }, snapshot, graphStrategy);
             combinedScores = { ...combinedScores, ...pageScores };
-            pageNum += 1;
         }
     }
     else {

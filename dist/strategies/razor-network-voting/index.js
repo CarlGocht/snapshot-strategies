@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.strategy = exports.version = exports.author = void 0;
+exports.strategy = exports.getAllData = exports.version = exports.author = void 0;
 const utils_1 = require("../../utils");
 const address_1 = require("@ethersproject/address");
 const bignumber_1 = require("@ethersproject/bignumber");
 exports.author = 'razor-network';
 exports.version = '0.1.0';
+const PAGE_SIZE = 1000;
 const RAZOR_NETWORK_SUBGRAPH_URL = 'https://graph-indexer.razorscan.io/subgraphs/name/razor/razor';
 // a method to calculate corresponding razor amount for delegators
 function sRZR_to_RZR(stake, totalSupply, amount) {
@@ -20,43 +21,66 @@ function sRZR_to_RZR(stake, totalSupply, amount) {
 function wei_to_ether(amount) {
     return amount / 10 ** 18;
 }
+async function getAllData(snapshot) {
+    let skip = 0;
+    let allDelegators = [];
+    let allStakers = [];
+    while (true) {
+        const params = {
+            delegators: {
+                __args: {
+                    first: PAGE_SIZE,
+                    skip
+                },
+                staker: {
+                    totalSupply: true,
+                    stake: true,
+                    staker: true
+                },
+                delegatorAddress: true,
+                sAmount: true
+            },
+            stakers: {
+                __args: {
+                    first: PAGE_SIZE,
+                    skip
+                },
+                stake: true,
+                totalSupply: true,
+                staker: true,
+                sAmount: true
+            }
+        };
+        if (snapshot !== 'latest') {
+            // @ts-ignore
+            params.delegators.__args.block = { number: snapshot };
+            // @ts-ignore
+            params.stakers.__args.block = { number: snapshot };
+        }
+        const response = await (0, utils_1.subgraphRequest)(RAZOR_NETWORK_SUBGRAPH_URL, params);
+        if (response.delegators && response.delegators.length) {
+            allDelegators = allDelegators.concat(response.delegators);
+        }
+        if (response.stakers && response.stakers.length) {
+            allStakers = allStakers.concat(response.stakers);
+        }
+        if (response.stakers.length === PAGE_SIZE ||
+            response.delegators.length === PAGE_SIZE) {
+            skip += PAGE_SIZE;
+        }
+        else {
+            break;
+        }
+    }
+    return { stakers: allStakers, delegators: allDelegators };
+}
+exports.getAllData = getAllData;
 async function strategy(space, network, provider, addresses, options, 
 //symbol: string,
 snapshot) {
-    const params = {
-        delegators: {
-            __args: {
-                where: {
-                    delegatorAddress_in: addresses
-                } // delegatorAddress
-            },
-            staker: {
-                totalSupply: true,
-                stake: true,
-                staker: true
-            },
-            delegatorAddress: true,
-            sAmount: true
-        },
-        stakers: {
-            __args: {
-                where: {
-                    staker_in: addresses //  stakerAddress
-                }
-            },
-            stake: true,
-            totalSupply: true,
-            staker: true,
-            sAmount: true
-        }
-    };
-    if (snapshot !== 'latest') {
-        // @ts-ignore
-        params.delegators.__args.block = { number: snapshot };
-    }
     const score = {};
-    // subgraph request 1 : it fetches all the details of the stakers and delegators.
-    const result = await (0, utils_1.subgraphRequest)(RAZOR_NETWORK_SUBGRAPH_URL, params);
+    // subgraph request : it fetches all the details of the stakers and delegators.
+    const result = await getAllData(snapshot);
     if (result.delegators || result.stakers) {
         result.delegators.forEach(async (delegator) => {
             const razor_amount = sRZR_to_RZR(bignumber_1.BigNumber.from(delegator.sAmount), bignumber_1.BigNumber.from(delegator.staker.totalSupply), bignumber_1.BigNumber.from(delegator.staker.stake));

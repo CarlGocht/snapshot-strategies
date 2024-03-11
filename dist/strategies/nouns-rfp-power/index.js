@@ -18,9 +18,7 @@ const powerTypesToMethod = {
     proposition: 'getPropositionPower'
 };
 async function strategy(space, network, provider, addresses, options, snapshot) {
-    const blockTag = typeof snapshot === 'number'
-        ? snapshot
-        : await provider.getBlockNumber(snapshot);
+    const blockTag = typeof snapshot === 'number' ? snapshot : 'latest';
     // Early return 0 voting power if governanceStrategy or powerType is not correctly set
     if (!options.governanceStrategy || !powerTypesToMethod[options.powerType]) {
         return Object.fromEntries(addresses.map((address) => [address, '0']));

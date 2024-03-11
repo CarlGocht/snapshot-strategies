@@ -65,7 +65,6 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
     const blockTag = typeof snapshot === 'number' ? snapshot : 'latest';
     const isXdai = network === '100'; // either xDAI or ETH mainnet
     const block = await provider.getBlock(blockTag);
-    console.log(block.number);
     // get the block number for subgraph query
     const subgraphBlock = isXdai
         ? block.number

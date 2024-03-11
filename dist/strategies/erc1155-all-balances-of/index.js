@@ -19,6 +19,9 @@ async function strategy(_space, network, _provider, addresses, options, snapshot
     const subgraphURL = isHosted
         ? HOSTED_SUBGRAPH_URL[network]
         : SUBGRAPH_URL[network];
+    if (!subgraphURL) {
+        throw new Error(`Unsupported network with id:${network}`);
+    }
     const eip1155BalancesParams = {
         balances: {
             __aliasFor: 'erc1155Balances',

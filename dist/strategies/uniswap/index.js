@@ -4,48 +4,62 @@ exports.strategy = exports.version = exports.author = void 0;
 const address_1 = require("@ethersproject/address");
 const utils_1 = require("../../utils");
 const UNISWAP_SUBGRAPH_URL = {
-    '1': 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
+    '1': 'https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v2-dev'
 };
-exports.author = 'vfatouros';
+exports.author = 'snapshot-labs';
 exports.version = '0.1.0';
-async function strategy(_space, network, _provider, addresses, options, snapshot) {
-    const params = {
-        users: {
-            __args: {
-                where: {
-                    id_in: addresses.map((address) => address.toLowerCase())
-                },
-                first: 1000
-            },
-            id: true,
-            liquidityPositions: {
+async function subgraphRequestWithPagination(subgraphURL, addresses, snapshot) {
+    const chunkSize = 1000;
+    const chunks = [];
+    for (let i = 0; i < addresses.length; i += chunkSize) {
+        chunks.push(addresses.slice(i, i + chunkSize));
+    }
+    const results = { users: [] };
+    for (const chunk of chunks) {
+        const params = {
+            users: {
                 __args: {
                     where: {
-                        liquidityTokenBalance_gt: 0
-                    }
+                        id_in: chunk.map((address) => address.toLowerCase())
+                    },
+                    first: 1000
                 },
-                liquidityTokenBalance: true,
-                pair: {
-                    id: true,
-                    token0: {
-                        id: true
+                id: true,
+                liquidityPositions: {
+                    __args: {
+                        where: {
+                            liquidityTokenBalance_gt: 0
+                        }
                     },
-                    reserve0: true,
-                    token1: {
-                        id: true
-                    },
-                    reserve1: true,
-                    totalSupply: true
+                    liquidityTokenBalance: true,
+                    pair: {
+                        id: true,
+                        token0: {
+                            id: true
+                        },
+                        reserve0: true,
+                        token1: {
+                            id: true
+                        },
+                        reserve1: true,
+                        totalSupply: true
+                    }
                 }
             }
+        };
+        if (snapshot !== 'latest') {
+            // @ts-ignore
+            params.users.liquidityPositions.__args.block = { number: snapshot };
         }
-    };
-    if (snapshot !== 'latest') {
-        // @ts-ignore
-        params.users.liquidityPositions.__args.block = { number: snapshot };
+        const result = await (0, utils_1.subgraphRequest)(subgraphURL, params);
+        results.users = results.users.concat(result.users);
     }
+    return results;
+}
+async function strategy(_space, network, _provider, addresses, options, snapshot) {
     const tokenAddress = options.address.toLowerCase();
-    const result = await (0, utils_1.subgraphRequest)(UNISWAP_SUBGRAPH_URL[network], params);
+    const subgraphURL = UNISWAP_SUBGRAPH_URL[network];
+    const result = await subgraphRequestWithPagination(subgraphURL, addresses, snapshot);
     const score = {};
     if (result && result.users) {
         result.users.forEach((u) => {

@@ -18,6 +18,9 @@ async function strategy(space, network, provider, addresses, options, snapshot) 
     return finalResult;
 }
 exports.strategy = strategy;
+function throwDivZero() {
+    throw Error('Cannot divide by zero!');
+}
 function resolveOperation(operation, resolvedOperands) {
     switch (operation) {
         case options_1.Operation.SquareRoot: {
@@ -82,6 +85,15 @@ function resolveOperation(operation, resolvedOperands) {
                 score > resolvedOperands[1][address]
                     ? score - resolvedOperands[1][address]
                     : 0
+            ]);
+            return Object.fromEntries(arr);
+        }
+        case options_1.Operation.Divide: {
+            const arr = Object.entries(resolvedOperands[0]).map(([address, score]) => [
+                address,
+                resolvedOperands[1][address] != 0
+                    ? score / resolvedOperands[1][address]
+                    : throwDivZero()
             ]);
             return Object.fromEntries(arr);
         }

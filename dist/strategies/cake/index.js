@@ -29,6 +29,7 @@ const onChainVotingPower = {
         address: '0x67Dfbb197602FDB9A9D305cC7A43b95fB63a0A56'
     }
 };
+const veCakeBlockNumber = 34371669;
 const abi = [
     'function getVotingPowerWithoutPool(address _user) view returns (uint256)'
 ];
@@ -121,13 +122,35 @@ async function getSmartChefStakedCakeAmount(snapshot, poolAddresses, addresses) 
         return acc;
     }, {});
 }
+async function veCakeStrategy(addresses, network, provider, blockTag, options) {
+    let callData = addresses.map((address) => [
+        onChainVotingPower.v1.address,
+        'getVotingPowerWithoutPool',
+        [address.toLowerCase()]
+    ]);
+    callData = [...chunk(callData, options.max || 400)];
+    const response = [];
+    for (const call of callData) {
+        const multiRes = await (0, utils_1.multicall)(network, provider, abi, call, {
+            blockTag
+        });
+        response.push(...multiRes);
+    }
+    return Object.fromEntries(response.map((value, i) => [
+        addresses[i],
+        parseFloat((0, units_1.formatEther)(value.toString()))
+    ]));
+}
 async function strategy(space, network, provider, addresses, options, snapshot) {
-    const pools = await getPools(provider, snapshot);
-    const userPoolBalance = await getSmartChefStakedCakeAmount(snapshot, pools.map((p) => p.id), addresses);
     const blockTag = typeof snapshot === 'number' ? snapshot : 'latest';
     if (blockTag === 'latest' ||
-        (typeof blockTag === 'number' &&
-            blockTag >= onChainVotingPower.v0.blockNumber)) {
+        (typeof blockTag === 'number' && blockTag >= veCakeBlockNumber)) {
+        return veCakeStrategy(addresses, network, provider, blockTag, options);
+    }
+    const pools = await getPools(provider, snapshot);
+    const userPoolBalance = await getSmartChefStakedCakeAmount(snapshot, pools.map((p) => p.id), addresses);
+    if (typeof blockTag === 'number' &&
+        blockTag >= onChainVotingPower.v0.blockNumber) {
         let callData = addresses.map((address) => [
             typeof blockTag === 'number' &&
                 blockTag < onChainVotingPower.v1.blockNumber

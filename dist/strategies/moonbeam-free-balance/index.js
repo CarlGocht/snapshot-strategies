@@ -11,7 +11,23 @@ function readLittleEndianBigInt(hex) {
     return BigInt(`0x${hex.match(/../g)?.reverse().join('')}`);
 }
 exports.readLittleEndianBigInt = readLittleEndianBigInt;
-async function strategy(space, network, provider, addresses, options) {
+function processPayload(payload) {
+    if (payload.error) {
+        const error = new Error(payload.error.message);
+        error.code = payload.error.code;
+        error.data = payload.error.data;
+        throw error;
+    }
+    return payload;
+}
+async function strategy(space, network, provider, addresses, options, snapshot) {
+    // Retrieve the blockhash for the snapshot
+    const { result: blockHash } = await (0, web_1.fetchJson)(provider.connection, JSON.stringify({
+        method: 'chain_getBlockHash',
+        params: typeof snapshot === 'number' ? [snapshot] : [],
+        id: 0,
+        jsonrpc: '2.0'
+    }), processPayload);
     // Pre-encoded key prefix for "system.account" storage
     const accountPrefix = `0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9`;
     const { decimals } = options;
@@ -33,20 +49,12 @@ async function strategy(space, network, provider, addresses, options) {
         // Build batch request for all the storage keys of the batch.
         const reqs = keys.map((key, index) => ({
             method: 'state_getStorage',
-            params: [key],
+            params: [key, blockHash],
             id: batchIndex * batchSize + index + 1,
             jsonrpc: '2.0'
         }));
         // Query batch of storage items
-        const payloads = await (0, web_1.fetchJson)(provider.connection, JSON.stringify(reqs), (payload) => {
-            if (payload.error) {
-                const error = new Error(payload.error.message);
-                error.code = payload.error.code;
-                error.data = payload.error.data;
-                throw error;
-            }
-            return payload;
-        });
+        const payloads = await (0, web_1.fetchJson)(provider.connection, JSON.stringify(reqs), processPayload);
         for (const payload of payloads) {
             if (payload.result === null) {
                 break;
