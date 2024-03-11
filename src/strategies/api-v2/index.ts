@@ -1,6 +1,7 @@
 import { getAddress } from '@ethersproject/address';
 import fetch from 'cross-fetch';
 import { formatUnits } from '@ethersproject/units';
+import { sha256 } from '../../utils';
 
 export const author = 'snapshot-labs';
 export const version = '0.1.0';
@@ -37,12 +38,16 @@ export async function strategy(
     };
     body = JSON.stringify(requestBody);
   }
+  const snapshotSecretHeader = sha256(
+    `${url}${process.env.SNAPSHOT_API_STRATEGY_SALT}`
+  );
 
   const response = await fetch(url, {
     method,
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-Snapshot-API-Strategy-Secret': snapshotSecretHeader
     },
     body
   });
@@ -51,9 +56,10 @@ export async function strategy(
     responseData = JSON.parse(responseData);
   } catch (e) {
     throw new Error(
-      `[api-v2] Errors found in API: URL: ${url}, Status: ${
-        response.status
-      }, Response: ${responseData.substring(0, 512)}`
+      `[api-v2] Errors found in API: URL: ${url}, Status: ${response.status}` +
+      response.ok
+        ? `, Response: ${responseData.substring(0, 512)}`
+        : ''
     );
   }
 
